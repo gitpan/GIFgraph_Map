@@ -33,7 +33,7 @@ open(OUT, ">sample31.html");
 
 $map = new GIFgraph::Map($my_graph);
 
-$map->set(info => '%l:  x=%x  %y=%y');
+$map->set(info => '%l:  x=%x  y=%y');
 
 print OUT "<html>\n<body>\n";
 

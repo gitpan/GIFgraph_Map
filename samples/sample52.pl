@@ -24,7 +24,7 @@ open(OUT, ">sample52.html");
 
 $map = new GIFgraph::Map($my_graph);
 
-$map->set(info => '%x field contains %p.2% of %s');
+$map->set(info => '%x field contains %.2p% of %s');
 
 print OUT "<html>\n<body>\n";
 

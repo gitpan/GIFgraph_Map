@@ -23,7 +23,7 @@ open(OUT, ">sample51.html");
 
 $map = new GIFgraph::Map($my_graph);
 
-$map->set(info => '%x field contains %p.0% of %.1s');
+$map->set(info => '%x field contains %p% of %.1s');
 
 print OUT "<html>\n<body>\n";
 
