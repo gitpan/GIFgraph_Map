@@ -1,0 +1,31 @@
+This package extends GIFgraph. It's allow generates HTML map text 
+for following graphics objects GIFgraph::pie, GIFgraph::bars,
+GIFgraph::point and GIFgraph::linespoints
+
+To install, first install GIFgraph. Then cd to the directory that contains
+this README file and type the following:
+
+    perl Makefile.PL
+
+If you wish to install this bundle somewhere other than the default
+location then type something like:
+
+    perl Makefile.PL PREFIX=/home/me/perl
+
+Then to build run make
+
+    make
+
+If you have write access to the install directory (or the one
+specified by PREFIX) then you can now type:
+
+    make install
+
+Presuming that the install target is in your PERL5LIB path then you
+are now ready to use GIFgraph::Map. Enjoy!
+
+Copyright (c) 1999 Roman Kosenko
+All righs reserved.
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
