@@ -2,8 +2,9 @@ This package extends GIFgraph. It's allow generates HTML map text
 for following graphics objects GIFgraph::pie, GIFgraph::bars,
 GIFgraph::point and GIFgraph::linespoints
 
-To install, first install GIFgraph. Then cd to the directory that contains
-this README file and type the following:
+To install, first install GIFgraph module. 
+Then cd to the directory that contains this README file 
+and type the following:
 
     perl Makefile.PL
 

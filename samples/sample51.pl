@@ -5,7 +5,7 @@ print STDERR "Processing sample 5-1\n";
 
 @data = ( 
     ["1st","2nd","3rd","4th","5th","6th"],
-    [    4,    2,    3,    4,    3,  3.5]
+    [ 2.24, 4.34, 5.23, 1.94, 5.03, 2.35]
 );
 
 $my_graph = new GIFgraph::pie( 600, 400 );
@@ -23,7 +23,7 @@ open(OUT, ">sample51.html");
 
 $map = new GIFgraph::Map($my_graph);
 
-$map->set(info => '%x field contains %p% of %s');
+$map->set(info => '%x field contains %p.0% of %.1s');
 
 print OUT "<html>\n<body>\n";
 

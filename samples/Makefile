@@ -2,7 +2,7 @@ PERL = perl
 .SUFFIXES: .gif .pl .html
 .SILENT:
 LIB = ..
-OPTIONS = -Tw
+OPTIONS = -T
 
 GIFS =  sample11.gif sample12.gif sample13.gif sample14.gif \
 		sample15.gif sample16.gif \

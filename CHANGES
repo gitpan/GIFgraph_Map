@@ -1,0 +1,13 @@
+Version 1.01
+
+- Enable using the same format as use printf routine, for set %x
+  and %y parameters. If x or y values is floating numbers your
+  may use '%.d[xy]' for round ones (d - simple digit).
+- Adding newWindow options. If newWindow is true you may set
+  windows parameters; overwise using defaults, and when you 
+  click on link will be open new navigator window.
+- Allow set another options, wich are using IMG tag.
+  If you need it, you may set 'img_option' parameters in your 
+  object using set routine (option - options of IMG tag).
+- Fixed bugs with seting @hrefs array for some objects. See BUGS.
+- Fixed bug with calculating percent for pie object.

@@ -1,0 +1,11 @@
+UNRESOLVED BUGS	
+
+- For bar chart with two datasets, displayed on top of earch other
+  incorrectly displayed status information.
+
+FIXED IN 1.01
+
+! Percent for pie object calculate incorrectly.
+! For bars, points and linespoints object seting @hrefs array has no
+  effect or working incorrectly.
+  (repoted by Dan Cummings <doc@cnr.com>)

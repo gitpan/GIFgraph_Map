@@ -8,7 +8,7 @@ require Exporter;
 
 @GIFgraph::Map::ISA = qw(Exporter);
 @EXPORT_OK = qw(set imagemap);
-$VERSION = 1.0;
+$VERSION = 1.01;
 
 #--------------------------------------------- set defaults
 my $ANGLE_OFFSET = 90;
@@ -16,11 +16,24 @@ my %Defaults = ( #Default Href is JavaScript code, which do nothing
                  href   => 'javascript:;',
 		 hrefs  => [],
 		 lhrefs => [],
-		 #Default information
+		 #Open new navigator window? 
+		 newWindow          => 0,
+		 window_height      => 0,
+		 window_width       => 0,
+		 window_resizeable  => 0,
+		 window_toolbar     => 0,
+		 window_location    => 0,
+		 window_directoties => 0,
+		 window_status      => 0,
+		 window_menubar     => 0,
+		 window_scrollbars  => 0,
+		 #Default information and legend
                  info   => 'x=%x   y=%y',
-		 #Default legend
-		 legend => '%l'
+		 legend => '%l',
                );
+
+my @No_Tags = ('img_src', 'img_usemap', 'img_ismap', 'img_width', 
+               'img_height', 'img_border');
 
 #********************************************* PUBLIC methods of class
 
@@ -41,8 +54,11 @@ sub new($) #($graphics)
 sub set
 { my $self = shift;
   my %options = @_;
+  my ($i, $no);
   map
-  { $self->{$_} = $options{$_};
+  { $no = 0;
+    foreach $i (@No_Tags) { $no = 1 if $i eq lc($_)}
+    $self->{$_} = $options{$_} unless $no;
   } keys %options;
 } #set
 
@@ -54,7 +70,7 @@ sub imagemap($$$) #($file, \@data)
   elsif ($type eq 'GIFgraph::bars') { $self->barsmap(shift, shift) }
   elsif ($type eq 'GIFgraph::points') { $self->pointsmap(shift, shift) }
   elsif ($type eq 'GIFgraph::linespoints') { $self->pointsmap(shift, shift) }
-  else {die "object $type are not supported"};
+  else {die "object $type is not supported"};
 } #imagemap
 
 
@@ -94,13 +110,23 @@ sub pointsmap($$) #($file, \@data)
 	  last MARKER;
 	}; #do
       } #MARKER:
-      my $href = @{$self->{hrefs}}->[$i][$_];
+      my $href = @{$self->{hrefs}}->[$_ - 1][$i];
       $href = $self->{href} unless defined($href);
       my $info = $self->{info};
-      $info =~ s/%x/$data->[0][$i]/g;
-      $info =~ s/%y/$data->[$_][$i]/g;
+      $info = $1.(sprintf "%$2f", $data->[0][$i]).$3 if ($info =~ /(^.*)%(\.\d)?x(.*$)/);
+      $info = $1.(sprintf "%$2f", $data->[$_][$i]).$3 if ($info =~ /(^.*)%(\.\d)?y(.*$)/);
       $info =~ s/%l/@{$gr->{legend}}->[$_ - 1]/g;
-      $s .= "Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\">\n";
+      $s .= "Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\"";
+      if ($self->{newWindow})
+      { my $s_;
+        map
+        { $s_ .= "$1=".$self->{$_}."," if (($_ =~ /window_(\w*)/) and ($self->{$_} != 0))
+        } keys %{$self};
+        chop $s_;
+        $s .= " Target=\"".($name + 1)."\"";
+        $s .= " onClick=\"window.open(\'\', \'".($name + 1)."\', \'$s_\')\"";
+      } #if
+      $s .= ">\n";
     } #foreach
   } #foreach
   if (defined($gr->{legend}))
@@ -128,7 +154,17 @@ sub pointsmap($$) #($file, \@data)
       my $r = $x1 - $gr->{marker_size} + $gr->{lg_el_width};
       my $b = $y1 + $gr->{marker_size};
       my $t = $y1 - $gr->{marker_size};
-      $s .= "\t<Area Shape=\"rect\" Coords=\"$l, $t, $r, $b\" Href=\"$lhref\" Alt=\"$legend\" onMouseOver=\"window.status=\'$legend\'\" onMouseOut=\"window.status=\'\'\">\n";
+      $s .= "\t<Area Shape=\"rect\" Coords=\"$l, $t, $r, $b\" Href=\"$lhref\" Alt=\"$legend\" onMouseOver=\"window.status=\'$legend\'\" onMouseOut=\"window.status=\'\'\"";
+      if ($self->{newWindow})
+      { my $s_;
+        map
+        { $s_ .= "$1=".$self->{$_}."," if (($_ =~ /window_(\w*)/) and ($self->{$_} != 0))
+        } keys %{$self};
+        chop $s_;
+        $s .= " Target=\"".($name + 1)."\"";
+        $s .= " onClick=\"window.open(\'\', \'".($name + 1)."\', \'$s_\')\"";
+      } #if
+      $s .= ">\n";
       $gr->{marker_size} = $old_ms;
       $xe += $gr->{legend_marker_width} + $gr->{legend_spacing};
       my $ys = int($y + $gr->{lg_el_height}/2 - $gr->{lgfh}/2);
@@ -141,7 +177,12 @@ sub pointsmap($$) #($file, \@data)
     } #foreach
   } #if				  
   $s .= "</Map>\n";
-  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" Border=\"0\" height=\"".$gr->{gify}."\" width=\"".$gr->{gifx}."\">\n";
+  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" border=0 Height=".($gr->{gify})." Width=".($gr->{gifx})." ";
+  map
+  { $s .= "$1=".($self->{$_})." " if ($_ =~ /img_(\w*)/) and defined($self->{$_})
+  } keys %{$self};
+  chop $s;
+  $s .= ">\n";
   return $s;
 } #pointsmap
 
@@ -177,13 +218,23 @@ sub barsmap($$) #($file, \@data)
 	$t = int $t;
 	$s .= ($$data[$i][$_] >= 0) ? "$l, $t, $r, $zero\" " : "$l, $zero, $r, $t\" ";
       } #else
-      my $href = @{$self->{hrefs}}->[$i][$_];
+      my $href = @{$self->{hrefs}}->[$i - 1][$_];
       $href = $self->{href} unless defined($href);
       my $info = $self->{info};
-      $info =~ s/%x/$data->[0][$_]/g;
-      $info =~ s/%y/$data->[$i][$_]/g;
+      $info = $1.(sprintf "%$2f", $data->[0][$_]).$3 if ($info =~ /(^.*)%(\.\d)?x(.*$)/);
+      $info = $1.(sprintf "%$2f", $data->[$i][$_]).$3 if ($info =~ /(^.*)%(\.\d)?y(.*$)/);
       $info =~ s/%l/@{$gr->{legend}}->[$i - 1]/g;
-      $s .= "Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\">\n";
+      $s .= "Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\"";
+      if ($self->{newWindow})
+      { my $s_;
+        map
+        { $s_ .= "$1=".$self->{$_}."," if (($_ =~ /window_(\w*)/) and ($self->{$_} != 0))
+        } keys %{$self};
+        chop $s_;
+        $s .= " Target=\"".($name + 1)."\"";
+        $s .= " onClick=\"window.open(\'\', \'".($name + 1)."\', \'$s_\')\"";
+      } #if
+      $s .= ">\n";
     } #foreach
   } #foreach
   if (defined($gr->{legend}))
@@ -202,7 +253,17 @@ sub barsmap($$) #($file, \@data)
       my $legend = $self->{legend};
       $legend =~ s/%l/$_/g;	
       my $ye = $y + int($gr->{lg_el_height}/2 - $gr->{legend_marker_height}/2);
-      $s .= "\t<Area Shape=\"rect\" Coords=\"$xe, $ye, ".($xe + $gr->{lg_el_width}).", ".($ye + $gr->{legend_marker_height})."\" Href=\"$lhref\" Alt=\"$legend\" onMouseOver=\"window.status=\'$legend\'\" onMouseOut=\"window.status=\'\'\">\n";
+      $s .= "\t<Area Shape=\"rect\" Coords=\"$xe, $ye, ".($xe + $gr->{lg_el_width}).", ".($ye + $gr->{legend_marker_height})."\" Href=\"$lhref\" Alt=\"$legend\" onMouseOver=\"window.status=\'$legend\'\" onMouseOut=\"window.status=\'\'\"";
+      if ($self->{newWindow})
+      { my $s_;
+        map
+        { $s_ .= "$1=".$self->{$_}."," if (($_ =~ /window_(\w*)/) and ($self->{$_} != 0))
+        } keys %{$self};
+        chop $s_;
+        $s .= " Target=\"".($name + 1)."\"";
+        $s .= " onClick=\"window.open(\'\', \'".($name + 1)."\', \'$s_\')\"";
+      } #if
+      $s .= ">\n";
       $xe += $gr->{legend_marker_width} + $gr->{legend_spacing};
       my $ys = int($y + $gr->{lg_el_height}/2 - $gr->{lgfh}/2);
       $x += $gr->{lg_el_width};
@@ -214,7 +275,12 @@ sub barsmap($$) #($file, \@data)
     } #foreach
   } #if
   $s .= "</Map>\n";
-  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" Border=\"0\" height=\"".$gr->{gify}."\" width=\"".$gr->{gifx}."\">\n";
+  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" border=0 Height=".($gr->{gify})." Width=".($gr->{gifx})." ";
+  map
+  { $s .= "$1=".($self->{$_})." " if ($_ =~ /img_(\w*)/) and defined($self->{$_})
+  } keys %{$self};
+  chop $s;
+  $s .= ">\n";
   return $s;
 } #barsmap
 
@@ -260,16 +326,31 @@ sub piemap($$) #($file, \@data)
     my $href = @{$self->{hrefs}}->[$i];
     $href = $self->{href} unless $href;
     my $info = $self->{info};
+    $pa = 100 * $data->[1][$i] / $sum; 
+    $info = $1.(sprintf "%$2f", $pa).$3 if ($info =~ /(^.*)%(\.\d)?p(.*$)/);
+    $info = $1.(sprintf "%$2f", $sum).$3 if ($info =~ /(^.*)%(\.\d)?s(.*$)/);
     $info =~ s/%x/$data->[0][$i]/g;
-    $info =~ s/%y/$data->[1][$i]/g;
-    $pa = int(360 * $data->[1][$i] / $sum); 
-    $info =~ s/%p/$pa/g;
-    $info =~ s/%s/$sum/g;
-    $s .= ", $xe, $ye\" Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\">\n";
+    $info = $1.(sprintf "%$2f", $data->[1][$i]).$3 if ($info =~ /(^.*)%(\.\d)?y(.*$)/);
+    $s .= ", $xe, $ye\" Href=\"$href\" Alt=\"$info\" onMouseOver=\"window.status=\'$info\'\" onMouseOut=\"window.status=\'\'\"";
+    if ($self->{newWindow})
+    { my $s_;
+      map
+      { $s_ .= "$1=".$self->{$_}."," if (($_ =~ /window_(\w*)/) and ($self->{$_} != 0))
+      } keys %{$self};
+      chop $s_;
+      $s .= " Target=\"".($name + 1)."\"";
+      $s .= " onClick=\"window.open(\'\', \'".($name + 1)."\', \'$s_\')\"";
+    } #if
+    $s .= ">\n";
     $pa = $pb;
   } #foreach
   $s .= "</Map>\n";
-  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" Border=\"0\" height=\"".$gr->{gify}."\" width=\"".$gr->{gifx}."\">\n";
+  $s .= "<Img UseMap=\"#$name\" Src=\"$file\" border=0 Height=".($gr->{gify})." Width=".($gr->{gifx})." ";
+  map
+  { $s .= "$1=".($self->{$_})." " if ($_ =~ /img_(\w*)/) and defined($self->{$_})
+  } keys %{$self};
+  chop $s;
+  $s .= ">\n";
   return $s;
 } #piemap
 
@@ -334,7 +415,7 @@ Then creat the B<GIFgraph::Map> object
 
 	Use set routine for set options.
 
-	$map->set(info => "%x slice contains %p% of %s");
+	$map->set(info => "%x slice contains %.1p% of %s (%x)");
 	
 	And creat HTML map text using the same name of GIF image
 	and array of data.
@@ -365,9 +446,10 @@ Set options. See OPTIONS.
 =over *
 
 =item B<hrefs>, B<lhrefs>
+
 Set hyper reference for each data (hrefs), and for each legend (lhrefs). 
 Array @hrefs must the same size as arrays in @data, otherwise null 
-elements of @hrefs set to default. Analogily array @lhrefs must the
+elements of @hrefs set to default. Analogely array @lhrefs must the
 same size as legend array. Default use the simple JavaScript 
 code 'javascript:;' instead reference, with do nothing.
 
@@ -404,19 +486,35 @@ Set information string for data and for legend. This will show in
 status window of your broswer.
 Format of this string the same for each data,
 but you may use special symbols for receive indiwidual information.
+For %x, %y, %s and $p parameters you may use spacial format for
+round data: %.d{x|y|p|s}, where d is digit from 0 to 9. For
+example %.0p or %.3x.
 Default is 'x=%x   y=%y' for info, and '%l' for legend.
 
 I<%x> - Replace to x values in @data - first array
 
 I<%y> - Replace to y values in @data - other arrays
 
-I<%s> - Replace to sum of all y values. Only GIFgraph::pie object.
+I<%s> - Replace to sum of all y values. Only for GIFgraph::pie object.
 
 I<%p> - Replace to value, which show what part of all contains this data.
-Only GIFgraph::pie object.
+Only for GIFgraph::pie object.
 
-I<%l> - Replace to legend. Only GIFgraph::bars, GIFgraph::poins and
+I<%l> - Replace to legend. Only for GIFgraph::bars, GIFgraph::poins and
 GIFgraph::linespoins objects.
+
+=item B<img_option>
+
+You may set any attribute in IMG tag (excluding UseMap, Src, Width, Height
+and Border they will set automaticuly) use set routine:
+set(img_option => value), where option is IMG attribute. For example:
+routine set(img_Alt => 'Example'); include Alt='Example' to IMG tag.
+
+=item B<newWindow>, B<window_option>
+
+If newWindow set to TRUE, then link will open in new navigator window.
+Parameters of new window you can set using window_option parameters,
+analogely img_option option.
 
 =back
 
@@ -426,7 +524,9 @@ Roman Kosenko
 
 =head2 Contact info
 
-Email: romik@amk.al.lg.ua
+E-mail:    romik@amk.al.lg.ua
+
+Home page: http://amk.al.lg.ua/~romik
 
 =head2 Copyright
 

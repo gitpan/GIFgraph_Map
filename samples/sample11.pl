@@ -9,6 +9,8 @@ print STDERR "Processing sample 1-1\n";
     [    1,    2,    5,    6,    3,  1.5,    1,     3,     4],
 );
 
+@hrefs = ['http://www.perl.com', 'http://www.freshmeat.net', 'http://www.debian.org'];
+
 $my_graph = new GIFgraph::bars(600, 400);
 
 $my_graph->set( 
@@ -25,6 +27,8 @@ $my_graph->plot_to_gif( "sample11.gif", \@data );
 open(OUT, ">sample11.html");
 
 $map = new GIFgraph::Map($my_graph);
+
+$map->set(hrefs=>\@hrefs);
 
 print OUT "<html>\n<body>\n";
 
